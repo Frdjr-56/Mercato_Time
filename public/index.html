@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mercato Beta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#e9f7ee;--bg2:#b3e0c5;--panel:rgba(255,255,255,.75);--text:#0b2a1a;--muted:#4b6b58;--gold:#b98200;--gold2:#ffd24a;--on-gold:#2a1d00;--line:rgba(11,42,26,.18);--red:#c0392b;--card1:#fff3b8;--card2:#e2a900;--cardtext:#2a1d00;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#04140c;--bg2:#0d4a2a;--panel:rgba(255,255,255,.07);--text:#f4f7f5;--muted:#9fb8a9;--gold:#ffc72c;--gold2:#ffe27a;--on-gold:#2a1d00;--line:rgba(255,255,255,.16);--red:#ff6b5b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg1:#04140c;--bg2:#0d4a2a;--panel:rgba(255,255,255,.07);--text:#f4f7f5;--muted:#9fb8a9;--gold:#ffc72c;--gold2:#ffe27a;--on-gold:#2a1d00;--line:rgba(255,255,255,.16);--red:#ff6b5b;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px;
+background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 70px,transparent 70px 140px),linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed}
+body::before{content:"";position:fixed;left:50%;top:50%;width:min(80vw,520px);aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid var(--line);border-radius:50%;pointer-events:none;z-index:-1}
+header{text-align:center}
+h1,h2,h3,.mise,.budget b,.nom,.rating p,input,.equipes strong{font-family:Oswald,Impact,sans-serif}
+h1{font-size:2.3rem;letter-spacing:.14em;margin:0;text-transform:uppercase}
+h1 span{color:var(--gold)}
+h2,h3{text-transform:uppercase;margin:6px 0;letter-spacing:.08em}
+.sous{margin:2px 0 0;color:var(--muted);font-size:.78rem;letter-spacing:.25em;text-transform:uppercase}
+.wrap{width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px}
+.budgets{display:flex;gap:10px}
+.budget,.panel{background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:16px}
+.budget{flex:1;padding:10px;text-align:center;transition:.25s}
+.budget small{display:block;color:var(--muted);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase}
+.budget b{font-size:1.8rem;color:var(--gold)}
+.budget.actif{border-color:var(--gold2);box-shadow:0 0 0 2px var(--gold2),0 0 26px rgba(255,210,74,.5);transform:translateY(-3px)}
+.player-card{position:relative;align-self:center;width:250px;padding:18px 16px 16px;border-radius:20px 20px 44px 44px;background:linear-gradient(155deg,var(--card1),var(--card2));color:var(--cardtext);text-align:center;box-shadow:0 16px 32px rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.5);overflow:hidden}
+.player-card[data-tier="argent"]{--card1:#f4f6f9;--card2:#98a2b3}
+.player-card[data-tier="bronze"]{--card1:#f5dcc2;--card2:#b9793c}
+.player-card::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);transform:translateX(-100%);animation:shine 2s ease-out .4s 1;pointer-events:none}
+@keyframes shine{to{transform:translateX(100%)}}
+.anim{animation:entree .55s cubic-bezier(.2,1.2,.4,1)}
+@keyframes entree{from{opacity:0;transform:translateY(26px) scale(.88) rotate(-3deg)}}
+.rating{position:absolute;left:16px;top:14px;line-height:1}
+.rating p{margin:0}
+#player-note{font-size:2.7rem;font-weight:700}
+#player-position{font-size:1rem;font-weight:700;letter-spacing:.1em;margin-top:4px!important}
+.silhouette{font-size:5rem;margin:8px 0 0;filter:drop-shadow(0 5px 4px rgba(0,0,0,.28))}
+.nom{font-size:1.55rem;font-weight:700;text-transform:uppercase;margin:0;padding-bottom:6px;border-bottom:2px solid rgba(0,0,0,.2)}
+.club{margin:8px 0;letter-spacing:.25em;font-weight:700}
+.valeur{background:rgba(0,0,0,.85);color:var(--gold2);border-radius:999px;padding:7px 12px;font-size:.82rem}
+.valeur strong{font-size:1.15rem}
+.panel{padding:14px;text-align:center}
+.mise-label{color:var(--muted);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase}
+.mise{font-size:2.6rem;font-weight:700;color:var(--gold);margin:2px 0}
+#meneur{color:var(--muted);font-size:.9rem}
+#tour{font-weight:700;margin:8px 0}
+.timer{display:inline-block;background:var(--text);color:var(--bg1);border-radius:999px;padding:4px 16px;font-weight:700}
+.timer.urgent{background:var(--red);color:#fff;animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.1)}}
+.rapides,.actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.montant-ligne{display:flex;gap:8px;justify-content:center;align-items:center;font-weight:700}
+input{width:120px;font-size:1.6rem;font-weight:700;text-align:center;padding:6px;border-radius:12px;border:2px solid var(--gold);background:transparent;color:var(--text)}
+button{font:700 1rem Inter,system-ui,sans-serif;border:0;border-radius:12px;padding:12px 20px;cursor:pointer;transition:transform .1s}
+button:active{transform:scale(.95)}
+.rapide{background:transparent;color:var(--text);border:2px solid var(--line);padding:8px 16px;border-radius:999px}
+.rapide:hover{border-color:var(--gold)}
+#btn-encherir{background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--on-gold);box-shadow:0 6px 18px rgba(197,143,0,.4)}
+#btn-abandon{background:transparent;color:var(--red);border:2px solid var(--red)}
+#max{color:var(--muted);font-size:.8rem;margin-top:4px}
+#msg{color:var(--red);min-height:1.2em;font-size:.9rem}
+.equipes{display:flex;gap:10px;align-items:flex-start;text-align:left;font-size:.82rem}
+.equipes>div{flex:1;min-width:0}
+.equipes strong{letter-spacing:.12em;text-transform:uppercase;font-size:1rem}
+[id^=cpt]{color:var(--muted);font-size:.72rem;margin-top:2px}
+.equipes ul{list-style:none;margin:8px 0 0;padding:0}
+.equipes li{padding:6px 8px;margin-bottom:5px;background:var(--panel);border-left:3px solid var(--gold);border-radius:6px}
+.terrain{position:relative;margin-top:8px;height:300px;border-radius:12px;border:2px solid rgba(255,255,255,.55);background:repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 30px,transparent 30px 60px),linear-gradient(#14803f,#0d5c2c);display:flex;flex-direction:column;justify-content:space-around;padding:8px 2px;overflow:hidden}
+.terrain::before{content:"";position:absolute;left:50%;top:-32px;width:70px;height:70px;margin-left:-35px;border:2px solid rgba(255,255,255,.45);border-radius:50%}
+.terrain::after{content:"";position:absolute;left:22%;right:22%;bottom:-2px;height:52px;border:2px solid rgba(255,255,255,.45)}
+.ligne{display:flex;justify-content:space-around;position:relative;z-index:1}
+.slot{width:25%;min-width:0;text-align:center}
+.pastille{margin:0 auto;width:30px;height:30px;border-radius:50%;background:#fff;color:#0b2a1a;font:700 .85rem Oswald,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+.pastille.or{background:var(--gold2)}
+.pastille.vide{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:.62rem;box-shadow:none;border:1px dashed rgba(255,255,255,.55)}
+.nom-j{display:block;margin-top:2px;font-size:.58rem;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+[hidden]{display:none!important}
+#jeu{display:flex;flex-direction:column;gap:14px}
+#btn-creer,#btn-rejoindre{background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--on-gold)}
+#btn-rapide{background:transparent;color:var(--text);border:2px solid var(--gold)}
+button:disabled,input:disabled{opacity:.45;cursor:not-allowed}
+.modes{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;margin-right:50px;margin-left:50px;margin-top:20px;}
+.mode-btn{flex:1;display:flex;flex-direction:column;gap:3px;align-items:center;padding:10px 8px;background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:14px}
+.mode-btn small{font-weight:400;color:var(--muted);font-size:.72rem}
+.mode-btn.actif{border-color:var(--gold2);box-shadow:0 0 0 2px var(--gold2),0 0 18px rgba(255,210,74,.35)}
+select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--text)}
+#pseudo{width:200px}
+.err{color:var(--red);min-height:1.2em;font-size:.9rem}
+#info{color:var(--gold);font-weight:600;min-height:1.2em;font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚽ Mercato <span>Time</span></h1>
+  <p class="sous">Enchères · Budget · Victoire</p>
+</header>
+<main class="wrap">
+<section class="panel" id="accueil">
+  <h2>Nouvelle partie</h2>
+  <div class="montant-ligne" style="margin-bottom:10px"><input id="pseudo" maxlength="16" placeholder="Ton pseudo"></div>
+  <div class="modes">
+    <input type="hidden" id="mode" value="classique">
+    <button class="mode-btn actif" data-mode="classique"><b>🔨 Classiques</b><small>À tour de rôle, offres visibles</small></button>
+    <button class="mode-btn" data-mode="aveugle"><b>🔒 À l’aveugle</b><small>Offres secrètes, révélées ensemble</small></button>
+  </div>
+  <div class="actions">
+    <button id="btn-creer">Créer une partie</button>
+    <button id="btn-rapide">Partie rapide</button>
+  </div>
+  <div class="mise-label">ou rejoindre avec un code</div>
+  <div class="montant-ligne" style="margin-top:8px">
+    <input id="code" maxlength="4" placeholder="CODE" style="width:130px;text-transform:uppercase">
+    <button id="btn-rejoindre">Rejoindre</button>
+  </div>
+  <div id="msg-accueil" class="err"></div>
+</section>
+
+<section class="panel" id="attente" hidden>
+  <div class="mise-label">En attente d’un adversaire</div>
+  <p class="mise" id="code-affiche"></p>
+  <p>Donne ce code à ton ami, ou attends qu’un joueur de la partie rapide arrive.</p>
+</section>
+
+<div id="jeu" hidden>
+  <div style="text-align:right"><button id="btn-pseudo" style="padding:6px 12px;font-size:.8rem;background:transparent;color:var(--text);border:2px solid var(--line);border-radius:999px">✏️ Changer mon pseudo</button></div>
+  <div class="budgets">
+    <div class="budget" id="b0"><small id="nomj0"></small><b><span id="bud0"></span> M€</b></div>
+    <div class="budget" id="b1"><small id="nomj1"></small><b><span id="bud1"></span> M€</b></div>
+  </div>
+
+  <div class="player-card anim" id="carte">
+    <div class="rating"><p id="player-note"></p><p id="player-position"></p></div>
+    <div class="silhouette">🧑‍🎤</div>
+    <p class="nom" id="player-name"></p>
+    <p class="club" id="player-club"></p>
+    <div class="valeur">💰 Valeur initiale <strong><span id="player-price"></span> M€</strong></div>
+  </div>
+
+  <div class="panel" id="enchere">
+    <div class="mise-label" id="mise-label">Enchère actuelle</div>
+    <p class="mise">💰 <span id="mise"></span></p>
+    <div id="meneur"></div>
+    <p id="tour"></p>
+    <span class="timer">⏱ <span id="timer"></span> s</span>
+    <div class="rapides">
+      <button class="rapide" data-plus="5">+5</button>
+      <button class="rapide" data-plus="10">+10</button>
+      <button class="rapide" data-plus="50">+50</button>
+    </div>
+    <div class="montant-ligne"><input type="number" id="montant" min="1"> M€</div>
+    <div class="actions">
+      <button id="btn-encherir">🔨 Enchérir</button>
+      <button id="btn-abandon">Abandonner</button>
+    </div>
+    <div id="max"></div>
+    <div id="info"></div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="panel" id="fin" hidden></div>
+
+  <div class="panel equipes">
+    <div><strong id="eqnom0">Équipe J1</strong><div id="cpt0"></div><div class="terrain" id="eq0"></div></div>
+    <div><strong id="eqnom1">Équipe J2</strong><div id="cpt1"></div><div class="terrain" id="eq1"></div></div>
+  </div>
+</div>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = function (id) { return document.getElementById(id); };
+const MAX_POSTE = { GAR: 1, DEF: 4, MIL: 3, ATT: 3 };
+let jeton = sessionStorage.getItem("jeton");
+if (!jeton) { jeton = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem("jeton", jeton); }
+let etat = null, cle = "", derniere = "";
+
+function nomCourt(nom) {
+  const m = nom.split(" ");
+  return m.length > 1 ? m.slice(1).join(" ") : nom;
+}
+
+function dessinerTerrain(eq) {
+  const lignes = [["ATT", 3], ["MIL", 3], ["DEF", 4], ["GAR", 1]];
+  let html = "";
+  lignes.forEach(function (l) {
+    const joueurs = eq.filter(function (p) { return p.poste === l[0]; });
+    html += '<div class="ligne">';
+    for (let k = 0; k < l[1]; k++) {
+      const p = joueurs[k];
+      if (p) {
+        html += '<div class="slot" title="' + p.nom + ' – ' + p.prix + ' M€"><div class="pastille' + (p.note >= 89 ? ' or' : '') + '">' + p.note + '</div><span class="nom-j">' + nomCourt(p.nom) + '</span></div>';
+      } else {
+        html += '<div class="slot"><div class="pastille vide">' + l[0] + '</div></div>';
+      }
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function montrer(id) { ["accueil", "attente", "jeu"].forEach(function (x) { $(x).hidden = x !== id; }); }
+
+document.querySelectorAll(".mode-btn").forEach(function (b) {
+  b.onclick = function () {
+    $("mode").value = b.dataset.mode;
+    document.querySelectorAll(".mode-btn").forEach(function (x) { x.classList.toggle("actif", x === b); });
+  };
+});
+$("pseudo").value = localStorage.getItem("pseudo") || "";
+function pseudo() { const p = $("pseudo").value.trim(); localStorage.setItem("pseudo", p); return p; }
+$("btn-creer").onclick = function () { socket.emit("creer", { jeton: jeton, nom: pseudo(), mode: $("mode").value }); };
+$("btn-rapide").onclick = function () { socket.emit("rapide", { jeton: jeton, nom: pseudo(), mode: $("mode").value }); };
+$("btn-rejoindre").onclick = function () { socket.emit("rejoindre", { jeton: jeton, nom: pseudo(), code: $("code").value }); };
+$("btn-pseudo").onclick = function () {
+  const n = prompt("Nouveau pseudo :", etat ? etat.noms[etat.moi] : "");
+  if (n !== null) { localStorage.setItem("pseudo", n.trim()); $("pseudo").value = n.trim(); socket.emit("pseudo", { nom: n }); }
+};
+$("btn-encherir").onclick = function () {
+  socket.emit(etat && etat.mode === "aveugle" ? "offre" : "encherir", { montant: Number($("montant").value) });
+};
+$("btn-abandon").onclick = function () { socket.emit(etat && etat.mode === "aveugle" ? "passer" : "abandonner"); };
+document.querySelectorAll(".rapide").forEach(function (b) {
+  b.onclick = function () {
+    if (!etat) { return; }
+    const plus = Number(b.dataset.plus);
+    $("montant").value = etat.mode === "aveugle" ? (Number($("montant").value) || etat.minOffre) + plus : etat.mise + plus;
+  };
+});
+
+socket.on("connect", function () {
+  const c = sessionStorage.getItem("code");
+  if (c) { socket.emit("reprendre", { code: c, jeton: jeton }); }
+});
+socket.on("perdu", function () { sessionStorage.removeItem("code"); montrer("accueil"); });
+socket.on("erreur", function (t) { $("msg").textContent = t; $("msg-accueil").textContent = t; });
+socket.on("etat", function (e) { etat = e; sessionStorage.setItem("code", e.code); rendre(e); });
+
+const btnRejouer = "<button onclick=\"sessionStorage.removeItem('code');location.reload()\">Rejouer</button>";
+
+function htmlFin(e) {
+  const r = e.resultat;
+  if (r.forfait !== undefined) {
+    return "<h2>Forfait</h2><p>" + e.noms[r.forfait] + " a quitté la partie. Victoire de " + e.noms[1 - r.forfait] + ".</p>" + btnRejouer;
+  }
+  let html = "<h3>Match final</h3>";
+  r.eq.forEach(function (x, i) {
+    html += "<p><strong>" + e.noms[i] + "</strong> : force " + x.base.toFixed(1) +
+      (x.malus ? " → malus -15 % (" + x.stars + " joueurs 89+)" : "") +
+      " | tirage " + (x.pct > 0 ? "+" : "") + x.pct + " % → <strong>" + x.force.toFixed(1) + "</strong></p>";
+  });
+  html += "<h2>" + e.noms[0] + " " + r.buts[0] + " - " + r.buts[1] + " " + e.noms[1] + "</h2>";
+  html += r.tirs
+    ? "<p>Égalité : " + e.noms[r.vainqueur] + " gagne aux tirs au but.</p>"
+    : "<p><strong>" + e.noms[r.vainqueur] + " remporte le match !</strong></p>";
+  return html + btnRejouer;
+}
+
+function rendre(e) {
+  if (e.phase === "attente") { montrer("attente"); $("code-affiche").textContent = e.code; return; }
+  montrer("jeu");
+  const fin = e.phase === "fin";
+  $("carte").hidden = fin; $("enchere").hidden = fin; $("fin").hidden = !fin;
+  for (let i = 0; i < 2; i++) {
+    $("bud" + i).textContent = e.budgets[i];
+    $("nomj" + i).textContent = e.noms[i] + (i === e.moi ? " (toi)" : "");
+    $("eqnom" + i).textContent = "Équipe de " + e.noms[i];
+    $("b" + i).classList.toggle("actif", !fin && (e.mode === "aveugle" ? !e.envoye[i] : i === e.tour));
+    $("eq" + i).innerHTML = dessinerTerrain(e.equipes[i]);
+    $("cpt" + i).textContent = e.equipes[i].length + "/11 – " + ["GAR", "DEF", "MIL", "ATT"].map(function (po) {
+      return po + " " + e.equipes[i].filter(function (p) { return p.poste === po; }).length + "/" + MAX_POSTE[po];
+    }).join(" · ");
+  }
+  if (fin) { $("fin").innerHTML = htmlFin(e); return; }
+  const j = e.carte;
+  if (j.nom !== derniere) {
+    derniere = j.nom;
+    $("player-name").textContent = j.nom;
+    $("player-note").textContent = j.note;
+    $("player-position").textContent = j.poste;
+    $("player-club").textContent = j.club;
+    $("player-price").textContent = j.valeur;
+    const c = $("carte");
+    c.dataset.tier = j.note >= 89 ? "or" : j.note >= 87 ? "argent" : "bronze";
+    c.classList.remove("anim"); void c.offsetWidth; c.classList.add("anim");
+  }
+  const aveugle = e.mode === "aveugle";
+  const monTour = aveugle ? !e.envoye[e.moi] : e.tour === e.moi;
+  $("mise-label").textContent = aveugle ? "Mode à l’aveugle – prix de départ" : "Enchère actuelle";
+  if (aveugle) {
+    $("mise").textContent = e.minOffre + " M€ minimum";
+    $("meneur").textContent = "Offres : " + e.noms.map(function (n, k) { return n + (e.envoye[k] ? " ✅" : " ⏳"); }).join(" · ");
+    $("tour").textContent = monTour ? "Fais ton offre secrète !" : "Offre envoyée (" + e.monOffre + " M€)… en attente.";
+  } else {
+    $("mise").textContent = e.mise + " M€" + (e.meneur === null ? " (départ)" : "");
+    $("meneur").textContent = e.meneur === null ? "Aucune enchère pour l’instant" : "Meneur : " + e.noms[e.meneur];
+    $("tour").textContent = monTour ? "À toi de jouer !" : "Au tour de " + e.noms[e.tour];
+  }
+  $("btn-encherir").textContent = aveugle ? "🔒 Valider mon offre" : "🔨 Enchérir";
+  $("btn-abandon").textContent = aveugle ? "Passer" : "Abandonner";
+  $("timer").textContent = e.reste;
+  $("timer").parentElement.classList.toggle("urgent", e.reste <= 5);
+  ["btn-encherir", "btn-abandon", "montant"].forEach(function (id) { $(id).disabled = !monTour; });
+  document.querySelectorAll(".rapide").forEach(function (b) { b.disabled = !monTour; });
+  const nouvelle = j.nom + "|" + e.mode + "|" + e.mise + "|" + e.meneur + "|" + e.tour + "|" + e.minOffre + "|" + monTour;
+  if (nouvelle !== cle) {
+    cle = nouvelle;
+    $("montant").value = aveugle ? e.minOffre : (e.meneur === null ? e.mise : e.mise + 1);
+    $("msg").textContent = "";
+  }
+  $("max").textContent = monTour ? (aveugle ? "Offre max : " : "Enchère max : ") + e.max + " M€ (le reste sert à compléter ton équipe)" : "";
+  $("info").textContent = e.info;
+}
+</script>
+</body>
+</html>
