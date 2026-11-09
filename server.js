@@ -5,7 +5,29 @@ const catalogue = require("./catalogue");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { maxHttpBufferSize: 10000 });
+const crypto = require("crypto");
+const avisRecus = [];
+
+app.disable("x-powered-by");
+app.use(function (req, res, next) {
+  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
+app.get("/admin/avis", function (req, res) {
+  const cle = process.env.ADMIN_KEY || "";
+  const recu = String(req.query.cle || "");
+  const a = Buffer.from(cle), b = Buffer.from(recu);
+  const ok = cle.length >= 12 && a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!ok) { return res.status(404).send("Introuvable"); }
+  res.setHeader("Cache-Control", "no-store");
+  res.json(avisRecus);
+});
 app.use(express.static("public"));
 
 const BUDGET = 800, DUREE = 20, MAX_EQUIPE = 11;
@@ -150,7 +172,10 @@ function encherir(g, i, montant) {
 function nom(g, i) { return g.joueurs[i].nom; }
 
 function nettoyer(n, i) {
-  const t = String(n || "").replace(/[<>&"'`]/g, "").trim().slice(0, 16);
+  const brut = String(n || "")
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF<>&"'`]/g, "")
+    .replace(/\s+/g, " ").trim();
+  const t = Array.from(brut).slice(0, 16).join("").trim();
   return t || "Joueur " + (i + 1);
 }
 
@@ -248,6 +273,9 @@ function finir(g) {
 function ajouter(g, socket, jeton, nomChoisi) {
   const i = g.joueurs.length;
   g.joueurs.push({ jeton: jeton, sid: socket.id, forfait: null, nom: nettoyer(nomChoisi, i) });
+  if (i === 1 && g.joueurs[0].nom.toLowerCase() === g.joueurs[1].nom.toLowerCase()) {
+    g.joueurs[1].nom = Array.from(g.joueurs[1].nom).slice(0, 12).join("") + " (2)";
+  }
   socket.join(g.code);
   socket.data = { code: g.code, i: i };
   if (g.joueurs.length === 2) { g.phase = "jeu"; nouvelleCarte(g); }
@@ -255,9 +283,23 @@ function ajouter(g, socket, jeton, nomChoisi) {
 }
 
 io.on("connection", function (socket) {
-  socket.on("creer", function (d) { ajouter(creer(d.mode), socket, d.jeton, d.nom); });
+  let compteur = 0;
+  const raz = setInterval(function () { compteur = 0; }, 10000);
+  socket.use(function (paquet, next) {
+    compteur++;
+    if (compteur > 150) { return next(new Error("Trop de requêtes")); }
+    next();
+  });
+  socket.on("disconnect", function () { clearInterval(raz); });
+
+  socket.on("creer", function (d) {
+    if (socket.data && socket.data.code) { return; }
+    if (Object.keys(parties).length >= 300) { return socket.emit("erreur", "Serveur complet, réessaie plus tard."); }
+    ajouter(creer(d.mode), socket, d.jeton, d.nom);
+  });
 
   socket.on("rejoindre", function (d) {
+    if (socket.data && socket.data.code) { return; }
     const g = parties[String(d.code || "").toUpperCase()];
     if (!g || g.phase !== "attente" || g.joueurs.length !== 1) {
       return socket.emit("erreur", "Code invalide ou partie déjà complète.");
@@ -266,12 +308,14 @@ io.on("connection", function (socket) {
   });
 
   socket.on("rapide", function (d) {
+    if (socket.data && socket.data.code) { return; }
     const mode = d.mode === "aveugle" ? "aveugle" : "classique";
     const g = attente[mode] && parties[attente[mode]];
     if (g && g.phase === "attente" && g.joueurs.length === 1) {
       attente[mode] = null;
       ajouter(g, socket, d.jeton, d.nom);
     } else {
+      if (Object.keys(parties).length >= 300) { return socket.emit("erreur", "Serveur complet, réessaie plus tard."); }
       const n = creer(mode);
       attente[mode] = n.code;
       ajouter(n, socket, d.jeton, d.nom);
@@ -322,7 +366,26 @@ io.on("connection", function (socket) {
     const g = parties[s.code];
     if (!g) { return; }
     g.joueurs[s.i].nom = nettoyer(d.nom, s.i);
+    const autre = g.joueurs[1 - s.i];
+    if (autre && autre.nom.toLowerCase() === g.joueurs[s.i].nom.toLowerCase()) {
+      g.joueurs[s.i].nom = Array.from(g.joueurs[s.i].nom).slice(0, 12).join("") + " (2)";
+    }
     diffuser(g);
+  });
+
+  socket.on("avis", function (d) {
+    const s = socket.data || {};
+    const g = parties[s.code];
+    if (!g || g.phase !== "fin" || g.joueurs[s.i].avis) { return; }
+    const note = Number(d && d.note);
+    if (!Number.isInteger(note) || note < 1 || note > 5) { return; }
+    const texte = Array.from(String((d && d.texte) || "").replace(/[\u0000-\u001F\u007F-\u009F]/g, " ")).slice(0, 500).join("").trim();
+    g.joueurs[s.i].avis = true;
+    const entree = { date: new Date().toISOString(), note: note, texte: texte, mode: g.mode };
+    avisRecus.push(entree);
+    if (avisRecus.length > 500) { avisRecus.shift(); }
+    console.log("AVIS " + JSON.stringify(entree));
+    socket.emit("avis-ok");
   });
 
   socket.on("disconnect", function () {

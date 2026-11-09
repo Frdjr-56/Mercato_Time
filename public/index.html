@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mercato</title>
+<title>Mercato Beta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -85,10 +85,19 @@ button:active{transform:scale(.95)}
 #btn-creer,#btn-rejoindre{background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--on-gold)}
 #btn-rapide{background:transparent;color:var(--text);border:2px solid var(--gold)}
 button:disabled,input:disabled{opacity:.45;cursor:not-allowed}
-.modes{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;margin-right:50px;margin-left:50px;margin-top:20px;}
+.modes{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
 .mode-btn{flex:1;display:flex;flex-direction:column;gap:3px;align-items:center;padding:10px 8px;background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:14px}
 .mode-btn small{font-weight:400;color:var(--muted);font-size:.72rem}
 .mode-btn.actif{border-color:var(--gold2);box-shadow:0 0 0 2px var(--gold2),0 0 18px rgba(255,210,74,.35)}
+.voile{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.boite{max-width:420px;width:100%;background:var(--bg1)}
+.etoiles{display:flex;justify-content:center;gap:4px;margin:8px 0}
+.etoiles button{background:transparent;color:var(--muted);font-size:2rem;padding:2px 6px}
+.etoiles button.on{color:var(--gold)}
+#avis-texte{width:100%;min-height:90px;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--text);padding:8px;font:inherit;resize:vertical}
+#avis-envoyer{background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--on-gold)}
+#avis-non{background:transparent;color:var(--text);border:2px solid var(--line)}
+.pied{color:var(--muted);font-size:.75rem;text-align:center;padding:12px}
 select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--text)}
 #pseudo{width:200px}
 .err{color:var(--red);min-height:1.2em;font-size:.9rem}
@@ -97,7 +106,7 @@ select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--line);
 </head>
 <body>
 <header>
-  <h1>⚽ Mercato <span>Time</span></h1>
+  <h1>⚽ Mercato <span>Beta</span></h1>
   <p class="sous">Enchères · Budget · Victoire</p>
 </header>
 <main class="wrap">
@@ -171,6 +180,22 @@ select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--line);
   </div>
 </div>
 </main>
+<footer class="pied">© 2026 Mercato Beta · Tous droits réservés</footer>
+<div id="avis" class="voile" hidden>
+  <div class="panel boite">
+    <h3>Ton avis nous intéresse !</h3>
+    <p>Comment as-tu trouvé cette partie ?</p>
+    <div class="etoiles" id="etoiles">
+      <button data-n="1">★</button><button data-n="2">★</button><button data-n="3">★</button><button data-n="4">★</button><button data-n="5">★</button>
+    </div>
+    <textarea id="avis-texte" maxlength="500" placeholder="Ce que tu as aimé, ce qui manque, les bugs… (pas d’informations personnelles)"></textarea>
+    <div class="actions">
+      <button id="avis-envoyer" disabled>Envoyer</button>
+      <button id="avis-non">Non merci</button>
+    </div>
+    <div id="avis-msg"></div>
+  </div>
+</div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
@@ -202,6 +227,27 @@ function dessinerTerrain(eq) {
     html += '</div>';
   });
   return html;
+}
+
+let noteAvis = 0, avisAffiche = false;
+function fermerAvis() { localStorage.setItem("avisVu", "1"); $("avis").hidden = true; }
+function proposerAvis() {
+  if (avisAffiche || localStorage.getItem("avisVu")) { return; }
+  avisAffiche = true;
+  setTimeout(function () { localStorage.setItem("avisVu", "1"); $("avis").hidden = false; }, 4000);
+}
+document.querySelectorAll("#etoiles button").forEach(function (b) {
+  b.onclick = function () {
+    noteAvis = Number(b.dataset.n);
+    document.querySelectorAll("#etoiles button").forEach(function (x) { x.classList.toggle("on", Number(x.dataset.n) <= noteAvis); });
+    $("avis-envoyer").disabled = false;
+  };
+});
+$("avis-envoyer").onclick = function () { socket.emit("avis", { note: noteAvis, texte: $("avis-texte").value }); };
+$("avis-non").onclick = fermerAvis;
+socket.on("avis-ok", function () { $("avis-msg").textContent = "Merci pour ton retour ! 🙏"; setTimeout(fermerAvis, 1500); });
+function esc(t) {
+  return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
 }
 
 function montrer(id) { ["accueil", "attente", "jeu"].forEach(function (x) { $(x).hidden = x !== id; }); }
@@ -244,20 +290,21 @@ socket.on("etat", function (e) { etat = e; sessionStorage.setItem("code", e.code
 const btnRejouer = "<button onclick=\"sessionStorage.removeItem('code');location.reload()\">Rejouer</button>";
 
 function htmlFin(e) {
+  const N = e.noms.map(esc);
   const r = e.resultat;
   if (r.forfait !== undefined) {
-    return "<h2>Forfait</h2><p>" + e.noms[r.forfait] + " a quitté la partie. Victoire de " + e.noms[1 - r.forfait] + ".</p>" + btnRejouer;
+    return "<h2>Forfait</h2><p>" + N[r.forfait] + " a quitté la partie. Victoire de " + N[1 - r.forfait] + ".</p>" + btnRejouer;
   }
   let html = "<h3>Match final</h3>";
   r.eq.forEach(function (x, i) {
-    html += "<p><strong>" + e.noms[i] + "</strong> : force " + x.base.toFixed(1) +
+    html += "<p><strong>" + N[i] + "</strong> : force " + x.base.toFixed(1) +
       (x.malus ? " → malus -15 % (" + x.stars + " joueurs 89+)" : "") +
       " | tirage " + (x.pct > 0 ? "+" : "") + x.pct + " % → <strong>" + x.force.toFixed(1) + "</strong></p>";
   });
-  html += "<h2>" + e.noms[0] + " " + r.buts[0] + " - " + r.buts[1] + " " + e.noms[1] + "</h2>";
+  html += "<h2>" + N[0] + " " + r.buts[0] + " - " + r.buts[1] + " " + N[1] + "</h2>";
   html += r.tirs
-    ? "<p>Égalité : " + e.noms[r.vainqueur] + " gagne aux tirs au but.</p>"
-    : "<p><strong>" + e.noms[r.vainqueur] + " remporte le match !</strong></p>";
+    ? "<p>Égalité : " + N[r.vainqueur] + " gagne aux tirs au but.</p>"
+    : "<p><strong>" + N[r.vainqueur] + " remporte le match !</strong></p>";
   return html + btnRejouer;
 }
 
@@ -276,7 +323,7 @@ function rendre(e) {
       return po + " " + e.equipes[i].filter(function (p) { return p.poste === po; }).length + "/" + MAX_POSTE[po];
     }).join(" · ");
   }
-  if (fin) { $("fin").innerHTML = htmlFin(e); return; }
+  if (fin) { $("fin").innerHTML = htmlFin(e); proposerAvis(); return; }
   const j = e.carte;
   if (j.nom !== derniere) {
     derniere = j.nom;
